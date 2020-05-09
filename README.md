@@ -85,9 +85,10 @@ Commit and push after that command finishes.
 5. Run `terraform init`.  You'll be prompted to choose a workspace.  The only option right now is `prod`, so choose that.
 6. Run `terraform apply` and say `yes` when it prompts for confirmation.  The creation of the CloudFront distribution takes a while.  The last time I ran this apply, it took around 10 minutes.
 7. Navigate to the `main-ui` folder.
-8. Run `npm run deploy`.  This will do a build and then push the contents up to your newly created S3 bucket.
-9. Wait about an hour for your DNS and certificate to be fully propagated.  The wait time varies, and I don't know enough to say why.
-10. Visit `berserknobel.com` on your browser.  It should open up with a generic ReactJS page.
+8. Run `npm install`.
+9. Run `npm run deploy`.  This will do a build and then push the contents up to your newly created S3 bucket.
+10. Wait about an hour for your DNS and certificate to be fully propagated.  The wait time varies, and I don't know enough to say why.
+11. Visit `berserknobel.com` on your browser.  It should open up with a generic ReactJS page.
 
 # Tearing Down
 Tearing everything down should be simple.  You just run `terraform destroy` from your `site` folder and then do the same from your `hostedzone` folder.  If you're really done with everything, you might also want to go into Terraform Cloud and remove your organization as well.
