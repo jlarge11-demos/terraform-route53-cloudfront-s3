@@ -27,6 +27,7 @@ This section will provide you with instructions to completely build the infrastr
 
 * You have an AWS root account setup.
 * You already have an admin level IAM user with an access key and a secret key.  This user will authenticate Terraform to AWS.  In the real world, you'll probably be more sophisticated with your IAM setup, but this should get us by for what we're learning here.
+* You have Terraform CLI v0.12.24 or higher.
 
 ### Coming up with your domain name
 This can be anything you like, but if you're just playing around, one thing you can do is to visit [this site](https://frightanic.com/goodies_content/docker-names.php) which will generate one of those funny names that Docker gives you.  The last time I ran this, I got `berserk_nobel`, so for this writeup, I'm going to go with a domain of `berserknobel.com`.  When you execute these instructions, you would simply replace `berserknobel` with the site name that you're going with.
