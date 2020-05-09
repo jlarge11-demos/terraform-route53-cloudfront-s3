@@ -27,6 +27,8 @@ This section will provide you with instructions to completely build the infrastr
 
 * You have an AWS root account setup.
 * You already have an admin level IAM user with an access key and a secret key.  This user will authenticate Terraform to AWS.  In the real world, you'll probably be more sophisticated with your IAM setup, but this should get us by for what we're learning here.
+* You have AWS CLI v1.8.56 or higher.
+* Your access key and secret key for your admin user are stored in `~/.aws/credentials`.
 * You have Terraform CLI v0.12.24 or higher.
 
 ### Coming up with your domain name
