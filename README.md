@@ -32,6 +32,9 @@ Now that we've gone through the contents of this repo and explained our usage of
 * You have an AWS root account setup.
 * You have the AWS CLI installed.  You don't necessarily need this to use Terraform in general, but there's an awkward part of these instructions where you run a bash script that runs Terraform and an AWS CLI command.
 * You already have an admin level IAM user with an access key and a secret key.  This user will authenticate Terraform to AWS.  In the real world, you'll probably be more sophisticated with your IAM setup, but this should get us by for what we're learning here.
+* You have AWS CLI v1.8.56 or higher.
+* Your access key and secret key for your admin user are stored in `~/.aws/credentials`.
+* You have Terraform CLI v0.12.24 or higher.
 
 ### Coming up with your domain name
 This can be anything you like, but if you're just playing around, one thing you can do is to visit [this site](https://frightanic.com/goodies_content/docker-names.php) which will generate one of those funny names that Docker gives you.  The last time I ran this, I got `berserk_nobel`, so for this writeup, I'm going to go with a domain of `berserknobel.com`.  For the rest of these instructions, I'm going to reference `berserknobel` simply because I'd rather do that than put ugly placeholders all over the place.  When you execute these instructions, you should simply replace `berserknobel` with the site name that you're going with.
