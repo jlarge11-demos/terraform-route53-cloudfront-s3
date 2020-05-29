@@ -7,7 +7,17 @@ This project provides a way to quickly stand up an AWS S3 static website by usin
 * An SSL certificate that gets added to your CloudFront distribution.  This will be validated with DNS.
 * A Route53 hosted zone for your site.
 
-# Remote State
+# What's in this Repo?
+### The hostedzone folder
+This folder contains the Terraform config for the DNS hosted zone for your site.  It should be stood up before applying the `site` folder.  **Important:**  When applying, do not run `terraform apply` on its own.  Instead, run `./tfapply` which will also run an AWS CLI command to sync the name servers between the newly created hosted zone and the domain registration.  This is admittedly pretty awkward, which is why I separated this part into its own folder.  While it should be fine to tear down and repave the rest of the infrastructure in this project, the hosted zone should probably be left alone once it's been created, especially since it costs $0.50 every time you create a new one.  For more details about these name server sync issues, I've provided more information further down in this writeup.
+
+### The site folder
+This folder contains the Terraform config for the rest of the infrastructure.  You should be able to repave this as many times as you want, but whenever you do, you'll also need to push the static content up again by going to your `main-ui` folder (or your `main-ui` repo if you separated it out) and running `npm run deploy`.
+
+### The main-ui folder
+This folder contains a ReactJS UI.  In its current state, it's nothing more than what you generate when you run `npx create-react-app main-ui`.  Typically, you would probably separate this out into its own Git repo, but I'm keeping it with the rest of the project to make the demo a little easier.  Eventually, you'll build this and push the results up into an S3 bucket that gets created from the Terraform config in the `site` folder.
+
+# How are we managing state?
 State and variable management is handled by Terraform Cloud in an organization that you create. Environment management (dev, prod, etc) is a little wonky with Terraform Cloud.  Each environment (e.g. `prod`) will be represented by one local workspace named `prod` and two remote workspaces with `prod` combined with the particular infrastructure folder (e.g. `site-prod`).  Currently, the only environment is `prod`, so that means your Terraform Cloud organization will have `hostedzone-prod` and `site-prod`.  If you add a `dev` environment, you would also have `hostedzone-dev` and `site-dev`.   Unfortunately, that means you have to repeat many of the same variables in all of them.  I'm not really sure of a better way to manage this.  Local `tfvars` files will force you to complicate your `terraform` commands, and some of these variables contain secrets.
 
 Currently, each remote environment needs to carry the following variables...
@@ -16,22 +26,17 @@ Currently, each remote environment needs to carry the following variables...
 * `aws_secret_access_key` for the IAM user that will be authenticating your Terraform run to AWS.
 * `environment` - My original attempt was to avoid having this variable and instead refer `var.workspace` in the config, but that always brings back the value `default` for some reason.  I found an [issue](https://github.com/hashicorp/terraform/issues/22802) out there that gets into that confusion, but it appears to remain unresolved.
 
-# The hostedzone folder
-This folder contains the DNS hosted zone for your site.  It should be stood up before applying the `site` folder.  **Important:**  When applying, do not run `terraform apply` on its own.  Instead, run `./tfapply` which will also run an AWS CLI command to sync the name servers between the newly created hosted zone and the domain registration.  This is admittedly pretty awkward, which is why I separated this part into its own folder.  While it should be fine to tear down and repave the rest of the infrastructure in this project, the hosted zone should probably be left alone once it's been created, especially since it costs $0.50 every time you create a new one.  For more details about these name server sync issues, I've provided more details further down in this writeup.
-
-# The site folder
-This folder contains the rest of the infrastructure.  You should be able to repave this as many times as you want, but whenever you do, you'll also need to push the static content up again by going to your `main-ui` folder (or your `main-ui` repo if you separated it out) and running `npm run deploy`.
-
-# Building your site
-This section will provide you with instructions to completely build the infrastructure for your new site.  The following assumptions are made...
+# Let's start building your site
+Now that we've gone through the contents of this repo and explained our usage of remote state management, it's time to build a site and expose it to the internet.  The following assumptions are made...
 
 * You have an AWS root account setup.
+* You have the AWS CLI installed.  You don't necessarily need this to use Terraform in general, but there's an awkward part of these instructions where you run a bash script that runs Terraform and an AWS CLI command.
 * You already have an admin level IAM user with an access key and a secret key.  This user will authenticate Terraform to AWS.  In the real world, you'll probably be more sophisticated with your IAM setup, but this should get us by for what we're learning here.
 
 ### Coming up with your domain name
-This can be anything you like, but if you're just playing around, one thing you can do is to visit [this site](https://frightanic.com/goodies_content/docker-names.php) which will generate one of those funny names that Docker gives you.  The last time I ran this, I got `berserk_nobel`, so for this writeup, I'm going to go with a domain of `berserknobel.com`.  When you execute these instructions, you would simply replace `berserknobel` with the site name that you're going with.
+This can be anything you like, but if you're just playing around, one thing you can do is to visit [this site](https://frightanic.com/goodies_content/docker-names.php) which will generate one of those funny names that Docker gives you.  The last time I ran this, I got `berserk_nobel`, so for this writeup, I'm going to go with a domain of `berserknobel.com`.  For the rest of these instructions, I'm going to reference `berserknobel` simply because I'd rather do that than put ugly placeholders all over the place.  When you execute these instructions, you should simply replace `berserknobel` with the site name that you're going with.
 
-### Registering on Route53
+### Registering on Route53 in the AWS Console
 Unlike most of our AWS infrastructure, we're going to do this manually.  This will cost you $12 if you're using a `.com` domain (or $282 for a `.sucks` domain, holy smokes).  Alternatively, if you already have a domain in Route53 for playing around with, you can simply use that one and skip this section.  If you decide to register your own domain in Route53, then you'll need to do the following...
 
 1. Login to the AWS console as your admin IAM user.
@@ -42,7 +47,7 @@ Unlike most of our AWS infrastructure, we're going to do this manually.  This wi
 6. Accept the defaults and click "Continue".
 7. Accept the terms and click on "Complete Order".
 
-This can take up to three days, but the last time I did this, it took about an hour.  If you try earlier than that, your browser will probably return some sort of certificate error.
+This can take up to three days, but the last time I did this, it took about an hour.  If you try to navigate to that domain earlier than that, your browser will probably return some sort of certificate error.
 
 ### Terraform Cloud Setup
 1. Navigate to [Terraform Cloud](https://app.terraform.io/app).
@@ -69,26 +74,39 @@ Follow all of the same steps you took in the previous section when you created t
 At this point, you'll probably want to fork this repo and potentially rename it to something that resembles the domain name you chose.  Also, if you're doing anything more long term, you might also want to take the `main-ui` folder and break that out into its own Git repo.
 
 ### Changing your code to use your domain
-To change the code base to the domain you're using, run the following command:
+Various places in the code base reference `__yoursitehere__`.  You'll need to go through the files that contain this and change it to your domain (`berserknobel` in my case).  For convenience, I included commands specific to your OS that you can use, but if these give you problems, you can also do this by hand.  Here are the files that need to be changed...
 
+* `hostedzone/tfapply`
+* `hostedzone/setup.tf`
+* `site/setup.tf`
+* `main-ui/package.json`
+
+#### In Linux
 ```bash
 egrep -lRZ '__yoursitehere__' . | xargs -0 -l sed -i -e 's/__yoursitehere__/berserknobel/g'
 ```
 
-Commit and push after that command finishes.
+#### In iOS
+```bash
+find . -type f | xargs sed -i '' 's/__yoursitehere__/berserknobel/g'
+```
 
 ### Building with Terraform
-1. Navigate to the `hostedzone` folder.
-2. Run `terraform init`.  You'll be prompted to choose a workspace.  The only option right now is `prod`, so choose that.
-3. Run `./tfapply` and say `yes` when it prompts for confirmation.  It's important that you don't run `terraform apply` on its own.  The `tfapply` script does some name server syncing that is explained further down in this writeup.
-4. Navigate to the `site` folder.
-5. Run `terraform init`.  You'll be prompted to choose a workspace.  The only option right now is `prod`, so choose that.
-6. Run `terraform apply` and say `yes` when it prompts for confirmation.  The creation of the CloudFront distribution takes a while.  The last time I ran this apply, it took around 10 minutes.
-7. Navigate to the `main-ui` folder.
-8. Run `npm install`.
-9. Run `npm run deploy`.  This will do a build and then push the contents up to your newly created S3 bucket.
-10. Wait about an hour for your DNS and certificate to be fully propagated.  The wait time varies, and I don't know enough to say why.
-11. Visit `berserknobel.com` on your browser.  It should open up with a generic ReactJS page.
+#### In the `hostedzone` folder
+1. Run `terraform init`.  You'll be prompted to choose a workspace.  The only option right now is `prod`, so choose that.
+2. Run `./tfapply` and say `yes` when it prompts for confirmation.  It's important that you don't run `terraform apply` on its own.  The `tfapply` script does some name server syncing that is explained further down in this writeup.
+
+#### In the `site` folder
+1. Run `terraform init`.  You'll be prompted to choose a workspace.  The only option right now is `prod`, so choose that.
+2. Run `terraform apply` and say `yes` when it prompts for confirmation.  The creation of the CloudFront distribution takes a while.  The last time I ran this apply, it took around 10 minutes.
+
+#### In the `main-ui` folder
+1. Run `npm install`.
+2. Run `npm run deploy`.  This will do a build and then push the contents up to your newly created S3 bucket.
+
+#### Trying it out
+1. Wait about an hour for your DNS and certificate to be fully propagated.  The wait time varies, and I don't know enough to say why.
+2. Visit `berserknobel.com` on your browser.  It should open up with a generic ReactJS page.
 
 # Tearing Down
 Tearing everything down should be simple.  You just run `terraform destroy` from your `site` folder and then do the same from your `hostedzone` folder.  If you're really done with everything, you might also want to go into Terraform Cloud and remove your organization as well.
