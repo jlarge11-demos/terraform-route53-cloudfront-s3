@@ -2,7 +2,7 @@
 This project provides a way to quickly stand up an AWS S3 static website by using Terraform with a Terraform Cloud backend.  When everything is created, you will have the following...
 
 * An S3 bucket that contains the static content for your site.
-* An CloudFront distribution that sits in front of your S3 bucket.
+* A CloudFront distribution that sits in front of your S3 bucket.
 * An Origin Access Identity that the CloudFront distribution will use to authenticate to your S3 bucket.
 * An SSL certificate that gets added to your CloudFront distribution.  This will be validated with DNS.
 * A Route53 hosted zone for your site.
@@ -30,9 +30,8 @@ Currently, each remote environment needs to carry the following variables...
 Now that we've gone through the contents of this repo and explained our usage of remote state management, it's time to build a site and expose it to the internet.  The following assumptions are made...
 
 * You have an AWS root account setup.
-* You have the AWS CLI installed.  You don't necessarily need this to use Terraform in general, but there's an awkward part of these instructions where you run a bash script that runs Terraform and an AWS CLI command.
+* You have AWS CLI v1.8.56 or higher.  You don't necessarily need this to use Terraform in general, but there's an awkward part of these instructions where you run a bash script that runs Terraform and an AWS CLI command.
 * You already have an admin level IAM user with an access key and a secret key.  This user will authenticate Terraform to AWS.  In the real world, you'll probably be more sophisticated with your IAM setup, but this should get us by for what we're learning here.
-* You have AWS CLI v1.8.56 or higher.
 * Your access key and secret key for your admin user are stored in `~/.aws/credentials`.
 * You have Terraform CLI v0.12.24 or higher.
 
@@ -66,8 +65,8 @@ This can take up to three days, but the last time I did this, it took about an h
 3. For "Workspace Name", enter `hostedzone-prod`.
 4. Click "Create Workspace".  You'll be taken to the main page of that workspace, and it will say that it's waiting for configuration.  That's fine.  We'll take care of that later.
 5. Click on "Variables", and add the following...
-   * `aws_access_key_id` should be set to your IAM user's access key and marked as secret.
-   * `aws_secret_access_key` should be set to your IAM user's secret key and marked as secret.
+   * `aws_access_key_id` should be set to your IAM user's access key and marked as sensitive.
+   * `aws_secret_access_key` should be set to your IAM user's secret key and marked as sensitive.
    * `environment` should be set to `prod`.  My original attempt was to avoid having this variable and instead refer `var.workspace` in the config, but that always brings back the value `default` for some reason.  I found an [issue](https://github.com/hashicorp/terraform/issues/22802) out there that gets into that confusion, but it appears to remain unresolved.
 
 ### Creating the site-prod workspace
